@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Whisper Transcription Test</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 20px;
+        background-color: #f5f7fa;
+        color: #2d3748;
+      }
+
+      h1 {
+        color: #2c5282;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 2.5rem;
+      }
+
+      button {
+        background-color: #4299e1;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        display: block;
+        margin: 0 auto;
+      }
+
+      button:hover {
+        background-color: #3182ce;
+      }
+
+      button:disabled {
+        background-color: #cbd5e0;
+        cursor: not-allowed;
+      }
+
+      #status {
+        text-align: center;
+        margin: 1rem 0;
+        font-weight: 500;
+        color: #4a5568;
+      }
+
+      #result {
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 1rem 0;
+        min-height: 100px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        line-height: 1.6;
+      }
+
+      .metrics {
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .metrics h3 {
+        color: #2c5282;
+        margin-top: 0;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+
+      .metric {
+        margin: 1rem 0;
+        padding: 10px;
+        background-color: #f8fafc;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .metric-label {
+        font-weight: 500;
+        color: #4a5568;
+      }
+
+      .metric-value {
+        color: #2c5282;
+        font-weight: 600;
+      }
+
+      /* Loading animation */
+      .processing {
+        color: #4299e1;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Whisper Transcription</h1>
+    <button onclick="startTranscription()">Start Transcription</button>
+    <div id="status"></div>
+    <div id="result"></div>
+    <div id="metrics" class="metrics"></div>
+
+    <script>
+      async function startTranscription() {
+        const statusDiv = document.getElementById("status");
+        const resultDiv = document.getElementById("result");
+        const metricsDiv = document.getElementById("metrics");
+        const button = document.querySelector("button");
+
+        statusDiv.className = "processing";
+        statusDiv.textContent = "Processing...";
+        resultDiv.textContent = "";
+        metricsDiv.textContent = "";
+        button.disabled = true;
+
+        try {
+          const response = await fetch("http://localhost:3000/upload", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Display transcription
+          resultDiv.textContent = data.transcription;
+
+          // Update metrics display
+          metricsDiv.innerHTML = `
+            <h3>Performance Metrics</h3>
+            <div class="metric">
+              <span class="metric-label">Accuracy</span>
+              <span class="metric-value">${data.metrics.accuracy}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Word Error Rate</span>
+              <span class="metric-value">${data.metrics.wer}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Processing Time</span>
+              <span class="metric-value">${data.metrics.time_taken} seconds</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Memory Used</span>
+              <span class="metric-value">${data.metrics.memory_mb} MB</span>
+            </div>
+          `;
+
+          statusDiv.className = "";
+          statusDiv.textContent = "Transcription complete!";
+        } catch (error) {
+          console.error("Error:", error);
+          statusDiv.className = "";
+          statusDiv.textContent = "Error: " + error.message;
+        } finally {
+          button.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
